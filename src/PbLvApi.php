@@ -47,15 +47,15 @@ class PbLvApi{
     const OPERATION_GET_CHECK_LIST = 'GetCheckList';
 
     private $operations = [
-        OPERATION_CREATE_ORDER,
-        OPERATION_COMPLETION,
-        OPERATION_REVERSE,
-        OPERATION_REFUND,
-        OPERATION_GET_ORDER_STATUS,
-        OPERATION_GET_ORDER_INFORMATION,
-        OPERATION_GET_ORDERS,
-        OPERATION_GET_CHECK_INFO,
-        OPERATION_GET_CHECK_LIST
+        self::OPERATION_CREATE_ORDER,
+        self::OPERATION_COMPLETION,
+        self::OPERATION_REVERSE,
+        self::OPERATION_REFUND,
+        self::OPERATION_GET_ORDER_STATUS,
+        self::OPERATION_GET_ORDER_INFORMATION,
+        self::OPERATION_GET_ORDERS,
+        self::OPERATION_GET_CHECK_INFO,
+        self::OPERATION_GET_CHECK_LIST
     ];
 
     private $apiAuthUrl = "https://twecp.privatbank.lv:8443/Exec";
