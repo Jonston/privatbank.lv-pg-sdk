@@ -2,6 +2,8 @@
 
 namespace PbLvApi;
 
+use Psr\Log\InvalidArgumentException;
+
 class PbLvApi{
 
     const CURRENCY_JPY = 392;
@@ -34,15 +36,42 @@ class PbLvApi{
         self::CURRENCY_PLN
     ];
 
+    private $apiAuthUrl = "https://twecp.privatbank.lv:8443/Exec";
+
     private $keyPath;
 
     private $certPath;
 
     private $certPass;
 
-    public function __construct()
-    {
+    private $merchant;
 
+    /**
+     * Constructor
+     *
+     * @param array $params
+    */
+    public function __construct($params)
+    {
+        if(empty($params['certPath']))
+            throw new InvalidArgumentException("certPath parameter is required!");
+
+        if(empty($params['certPass']))
+            throw new InvalidArgumentException("certPass parameter is required!");
+
+        if(empty($params['keyPath']))
+            throw new InvalidArgumentException("keyPath parameter is required!");
+
+        if(empty($params['merchant']))
+            throw new InvalidArgumentException("merchant parameter is required!");
+
+        $this->keyPath = $params['keyPath'];
+
+        $this->certPath = $params['certPath'];
+
+        $this->certPass = $params['certPass'];
+
+        $this->merchant = $params['merchant'];
     }
 
 }
