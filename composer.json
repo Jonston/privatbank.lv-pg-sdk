@@ -1,6 +1,7 @@
 {
   "name": "jonston/privatbank.vl-pg-sdk",
   "description": "privatbank.lv payment gateway API library",
+  "version": "1.0.0",
   "license": "MIT",
   "authors": [
     {
