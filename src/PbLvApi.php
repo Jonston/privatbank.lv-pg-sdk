@@ -36,6 +36,28 @@ class PbLvApi{
         self::CURRENCY_PLN
     ];
 
+    const OPERATION_CREATE_ORDER = 'CreateOrder';
+    const OPERATION_COMPLETION = 'Completion';
+    const OPERATION_REVERSE = 'Reverse';
+    const OPERATION_REFUND = 'Refund';
+    const OPERATION_GET_ORDER_STATUS = 'GetOrderStatus';
+    const OPERATION_GET_ORDER_INFORMATION = 'GetOrderInformation';
+    const OPERATION_GET_ORDERS = 'GetOrders';
+    const OPERATION_GET_CHECK_INFO = 'GetCheckInfo';
+    const OPERATION_GET_CHECK_LIST = 'GetCheckList';
+
+    private $operations = [
+        OPERATION_CREATE_ORDER,
+        OPERATION_COMPLETION,
+        OPERATION_REVERSE,
+        OPERATION_REFUND,
+        OPERATION_GET_ORDER_STATUS,
+        OPERATION_GET_ORDER_INFORMATION,
+        OPERATION_GET_ORDERS,
+        OPERATION_GET_CHECK_INFO,
+        OPERATION_GET_CHECK_LIST
+    ];
+
     private $apiAuthUrl = "https://twecp.privatbank.lv:8443/Exec";
 
     private $keyPath;
@@ -72,6 +94,104 @@ class PbLvApi{
         $this->certPass = $params['certPass'];
 
         $this->merchant = $params['merchant'];
+    }
+
+    /**
+     * Create order
+     *
+     * @param array $params
+     *
+     * @return string
+    */
+    public function createOrder($params){
+
+        if(empty($params['amount']))
+            throw new InvalidArgumentException("amount parameter is required!");
+
+        if(empty($params['currency']) || ! in_array($params['currency'], $this->currencies))
+            throw new InvalidArgumentException("currency parameter is required or wrong currency code!");
+
+        $order = new \SimpleXMLElement('<Order></Order>');
+
+        $order->addChild('Merchant', $this->merchant);
+        $order->addChild('Amount', floor($params['amount'] * 100));
+        $order->addChild('Currency', $params['currency']);
+
+        if( ! empty($params['orderType']))
+            $order->addChild('OrderType', $params['orderType']);
+
+        if( ! empty($params['description']))
+            $order->addChild('Description', $params['description']);
+
+        if( ! empty($params['approveUrl']))
+            $order->addChild('ApproveUrl', $params['approveUrl']);
+
+        if( ! empty($params['cancelUrl']))
+            $order->addChild('CancelUrl', $params['cancelUrl']);
+
+        if( ! empty($params['declineUrl']))
+            $order->addChild('DeclineUrl', $params['declineUrl']);
+
+        if( ! empty($params['phone']))
+            $order->addChild('Phone', $params['phone']);
+
+        if( ! empty($params['addParams']) && is_array($params['addParams'])){
+            $addParams = new \SimpleXMLElement("<AddParams></AddParams>");
+
+            foreach($params['addParams'] as $key => $param){
+                $addParams->addChild(ucfirst($key), $param);
+            }
+
+            $order->addChild('AddParams', $params['addParams']);
+        }
+
+        $request = new \SimpleXMLElement('<Request></Request>');
+        $request->addChild('OperationType', 'CreateOrder');
+        $request->addChild('Language', $params['language']);
+        $request->addChild('Order', $order);
+
+        return $this->request($request);
+    }
+
+    /**
+     * Generate payment link
+     *
+     * @param string $orderId
+     *
+     * @param string $sessionId
+     *
+     * @return string
+     */
+    public function paymentLink($orderId, $sessionId){
+
+    }
+
+    /**
+     * Send request
+     *
+     * @param string $xmlData
+     *
+     * @return Object
+    */
+    protected function request($xmlData){
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: text/xml'));
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $xmlData);
+        curl_setopt($ch, CURLOPT_URL, $this->apiAuthUrl);
+        curl_setopt($ch, CURLOPT_SSH_PRIVATE_KEYFILE, $this->certPath);
+        curl_setopt($ch, CURLOPT_SSLCERTPASSWD, $this->certPass);
+        curl_setopt($ch, CURLOPT_CAINFO, $this->keyPath);
+        curl_setopt($ch, CURLOPT_SSLCERT, $this->keyPath);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_VERBOSE , 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $ch_result = curl_exec($ch);
+        curl_close($ch);
+        return simplexml_load_string($ch_result);
     }
 
 }
