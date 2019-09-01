@@ -104,10 +104,10 @@ class PbLvApi{
     public function createOrder($params){
 
         if(empty($params['amount']))
-            throw new InvalidArgumentException("amount parameter is required!");
+            throw new \InvalidArgumentException("amount parameter is required!");
 
         if(empty($params['currency']) || ! in_array($params['currency'], $this->currencies))
-            throw new InvalidArgumentException("currency parameter is required or wrong currency code!");
+            throw new \InvalidArgumentException("currency parameter is required or wrong currency code!");
 
         $order = new \SimpleXMLElement('<Order></Order>');
 
