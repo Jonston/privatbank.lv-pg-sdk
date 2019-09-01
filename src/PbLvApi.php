@@ -56,6 +56,8 @@ class PbLvApi{
         self::OPERATION_GET_CHECK_LIST
     ];
 
+    const LANGUAGE_EN = 'EN';
+
     private $apiAuthUrl = "https://twecp.privatbank.lv:8443/Exec";
 
     private $keyPath;
@@ -70,7 +72,7 @@ class PbLvApi{
      * Constructor
      *
      * @param array $params
-    */
+     */
     public function __construct($params)
     {
         if(empty($params['certPath']))
@@ -100,17 +102,28 @@ class PbLvApi{
      * @param array $params
      *
      * @return string
-    */
+     */
     public function createOrder($params){
 
         if(empty($params['amount']))
             throw new \InvalidArgumentException("amount parameter is required!");
 
+        if(empty($params['language']))
+            throw new \InvalidArgumentException("language parameter is required!");
+
         if(empty($params['currency']) || ! in_array($params['currency'], $this->currencies))
             throw new \InvalidArgumentException("currency parameter is required or wrong currency code!");
 
-        $order = new \SimpleXMLElement('<Order></Order>');
+        $tkkpg = new \SimpleXMLElement("<TKKPG></TKKPG>");
+        $tkkpg->addChild('Request');
 
+        $request = $tkkpg->Request;
+
+        $request->addChild('Operation', 'CreateOrder');
+        $request->addChild('Language', $params['language']);
+        $request->addChild('Order');
+
+        $order = $request->Order;
         $order->addChild('Merchant', $this->merchant);
         $order->addChild('Amount', floor($params['amount'] * 100));
         $order->addChild('Currency', $params['currency']);
@@ -134,21 +147,20 @@ class PbLvApi{
             $order->addChild('Phone', $params['phone']);
 
         if( ! empty($params['addParams']) && is_array($params['addParams'])){
-            $addParams = new \SimpleXMLElement("<AddParams></AddParams>");
+            $order->addChild('AddParams');
+
+            $addParams = $order->AddParams;
 
             foreach($params['addParams'] as $key => $param){
                 $addParams->addChild(ucfirst($key), $param);
             }
-
-            $order->addChild('AddParams', $params['addParams']);
         }
 
-        $request = new \SimpleXMLElement('<Request></Request>');
-        $request->addChild('OperationType', 'CreateOrder');
-        $request->addChild('Language', $params['language']);
-        $request->addChild('Order', $order);
+        echo '<pre>'; print_r($tkkpg); echo '</pre>';
 
-        return $this->request($request);
+        $response = $this->request($tkkpg->asXML());
+
+        return $response;
     }
 
 
@@ -170,14 +182,18 @@ class PbLvApi{
      *
      * @param string $xmlData
      *
+     * @param string $type
+     *
+     * @throws \ErrorException
+     *
      * @return Object
-    */
-    protected function request($xmlData){
+     */
+    protected function request($xmlData, $type = 'post'){
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: text/xml'));
         curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_POST, 1);
+        $type ? curl_setopt($ch, CURLOPT_POST, 1) : null;
         curl_setopt($ch, CURLOPT_POSTFIELDS, $xmlData);
         curl_setopt($ch, CURLOPT_URL, $this->apiAuthUrl);
         curl_setopt($ch, CURLOPT_SSH_PRIVATE_KEYFILE, $this->certPath);
@@ -189,6 +205,10 @@ class PbLvApi{
         curl_setopt($ch, CURLOPT_VERBOSE , 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         $ch_result = curl_exec($ch);
+
+        if(curl_errno($ch))
+            throw new \ErrorException(curl_error($ch));
+
         curl_close($ch);
         return simplexml_load_string($ch_result);
     }
