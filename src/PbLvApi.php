@@ -57,6 +57,16 @@ class PbLvApi{
     ];
 
     const LANGUAGE_EN = 'EN';
+    const LANGUAGE_UA = 'UA';
+    const LANGUAGE_RU = 'RU';
+    const LANGUAGE_LV = 'LV';
+
+    private $languages = [
+        self::LANGUAGE_EN,
+        self::LANGUAGE_UA,
+        self::LANGUAGE_RU,
+        self::LANGUAGE_LV,
+    ];
 
     private $apiAuthUrl = "https://twecp.privatbank.lv:8443/Exec";
 
@@ -68,10 +78,14 @@ class PbLvApi{
 
     private $merchant;
 
+    private $language;
+
     /**
      * Constructor
      *
      * @param array $params
+     *
+     * @throws \InvalidArgumentException
      */
     public function __construct($params)
     {
@@ -87,6 +101,12 @@ class PbLvApi{
         if(empty($params['merchant']))
             throw new \InvalidArgumentException("merchant parameter is required!");
 
+        if(empty($params['language'] || in_array($params['language'], $this->languages)))
+            throw new \InvalidArgumentException(
+                "language parameter is required or wrong language code!Supported language codes: "
+                . implode(', ', $this->languages)
+            );
+
         $this->keyPath = $params['keyPath'];
 
         $this->certPath = $params['certPath'];
@@ -94,6 +114,8 @@ class PbLvApi{
         $this->certPass = $params['certPass'];
 
         $this->merchant = $params['merchant'];
+
+        $this->language = $params['language'];
     }
 
     /**
@@ -120,7 +142,7 @@ class PbLvApi{
         $request = $tkkpg->Request;
 
         $request->addChild('Operation', 'CreateOrder');
-        $request->addChild('Language', $params['language']);
+        $request->addChild('Language', $this->language);
         $request->addChild('Order');
 
         $order = $request->Order;
@@ -156,12 +178,80 @@ class PbLvApi{
             }
         }
 
-        echo '<pre>'; print_r($tkkpg); echo '</pre>';
-
         $response = $this->request($tkkpg->asXML());
 
         return $response;
     }
+
+
+    /**
+     * Get orders list
+     *
+     * @param array $params
+     *
+     * @throws \InvalidArgumentException
+     *
+     * @return string
+     */
+    public function getOrders(array $params){
+
+        if( ! isset($params['filters']['period']['start']) && ! isset($params['filters']['lastCount']))
+            throw new \InvalidArgumentException("filters/period/start or filters/lastCount parameter is required!");
+
+        $tkkpg = new \SimpleXMLElement("<TKKPG></TKKPG>");
+
+        $request = $tkkpg->addChild('Request');
+        $request->addChild('Operation', 'GetOrders');
+        $request->addChild('Merchant', $this->merchant);
+        $request->addChild('Language', $this->language);
+
+        if( ! empty($params['filters'])){
+            $filters = $request->addChild('OrdersFilter');
+
+            if(isset($params['filters']['lastCount']))
+                $filters->addChild('LastCount', $params['filters']['lastCount']);
+
+            if(isset($params['filters']['startFrom']))
+                $filters->addChild('StartFrom', $params['filters']['startfrom']);
+
+            if(isset($params['filters']['status']))
+                $filters->addChild('Status', $params['filters']['status']);
+
+            if(isset($params['filters']['period'])){
+                $period = $filters->addChild('Period');
+
+                if(isset($params['filters']['period']['start']))
+                    $period->addChild('Start', $params['filters']['period']['start']);
+
+                if(isset($params['period']['end']))
+                    $period->addChild('End', $params['filters']['period']['end']);
+            }
+
+            if(isset($params['filters']['amount'])){
+                $amount = $filters->addChild('Amount');
+
+                if(isset($params['filters']['amount']['min']))
+                    $amount->addChild('Min', $params['filters']['amount']['min']);
+
+                if(isset($params['filters']['amount']['max']))
+                    $amount->addChild('Max', $params['filters']['amount']['max']);
+            }
+
+            if(isset($params['filters']['description']))
+                $filters->addChild('Description', $params['filters']['description']);
+
+            if(isset($params['filters']['orderBy']))
+                $filters->addChild('OrderBy', $params['filters']['orderBy']);
+
+            if(isset($params['filters']['orderingDirection']))
+                $filters->addChild('OrderingDirection', $params['filters']['orderingDirection']);
+        }
+
+        $respose = $this->request($tkkpg->asXML());
+
+        return $respose;
+    }
+
 
 
     /**
