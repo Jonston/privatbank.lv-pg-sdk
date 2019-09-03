@@ -257,14 +257,31 @@ class PbLvApi{
     /**
      * Generate payment link
      *
-     * @param string $orderId
-     *
-     * @param string $sessionId
+     * @param array $params
      *
      * @return string
      */
-    public function paymentLink($orderId, $sessionId){
+    public function getOrderStatus($params){
+        $tkkpg = new \SimpleXMLElement('<TKKPG></TKKPG>');
 
+        if( ! isset($params['sessionId']))
+            throw new \InvalidArgumentException('sessionId parameter is required');
+
+        if( ! isset($params['orderId']))
+            throw new \InvalidArgumentException('orderId parameter is required');
+
+        $request = $tkkpg->addChild('Request');
+        $request->addChild('Operation', 'GetOrderStatus');
+        $request->addChild('Language', $this->language);
+        $request->addChild('SessionID', $params['sessionId']);
+
+        $order = $request->addChild('Order');
+        $order->addChild('Merchant', $this->merchant);
+        $order->addChild('OrderID', $params['orderId']);
+
+        $response = $this->request($tkkpg->asXML());
+
+        return $response;
     }
 
     /**
