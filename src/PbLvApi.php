@@ -295,12 +295,12 @@ class PbLvApi{
      *
      * @return Object
      */
-    protected function request($xmlData, $type = 'post'){
+    protected function request($xmlData){
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: text/xml'));
         curl_setopt($ch, CURLOPT_HEADER, 0);
-        $type ? curl_setopt($ch, CURLOPT_POST, 1) : null;
+        curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $xmlData);
         curl_setopt($ch, CURLOPT_URL, $this->apiAuthUrl);
         curl_setopt($ch, CURLOPT_SSH_PRIVATE_KEYFILE, $this->certPath);
